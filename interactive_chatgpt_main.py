@@ -110,7 +110,7 @@ import json
 import requests
 
 class LLMFortuneGenerator(object):
-    def __init__(self, api_key=None):
+    def __init__(self, api_key="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"):
         # Try to get API key from environment variable if not provided
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self.api_key:
