@@ -24,8 +24,8 @@ class TerminalInterface(RobotInterface):
     def __init__(self):
         # Python 2.7 style initialization
         super(TerminalInterface, self).__init__()
-        print "Terminal-based Fortune Teller initialized."
-        print "This version simulates the robot through text-based interaction.\n"
+        print("Terminal-based Fortune Teller initialized.")
+        print("This version simulates the robot through text-based interaction.\n")
         
         # Define gestures available
         self.gestures = {
@@ -37,7 +37,7 @@ class TerminalInterface(RobotInterface):
     
     def say(self, text):
         """Print text to terminal to simulate speech"""
-        print "\n🤖 Pepper says: \"%s\"\n" % text
+        print("\n🤖 Pepper says: \"%s\"\n" % text)
     
     def move_head(self, yaw, pitch):
         """Simulate head movement with text description"""
@@ -61,46 +61,46 @@ class TerminalInterface(RobotInterface):
         if not direction:
             direction = "to center position"
             
-        print "(Pepper moves head %s)" % direction
+        print("(Pepper moves head %s)" % direction)
     
     def perform_gesture(self, gesture_name):
         """Execute a named gesture"""
         if gesture_name in self.gestures:
             self.gestures[gesture_name]()
         else:
-            print "(Unknown gesture: %s)" % gesture_name
+            print("(Unknown gesture: %s)" % gesture_name)
     
     def get_camera_image(self):
         """Simulate camera input by returning None"""
-        print "(Pepper appears to be looking at you)"
+        print("(Pepper appears to be looking at you)")
         return None
     
     def process_touch(self):
         """Simulate touch input by asking user"""
-        print "\nWhere would you like to touch Pepper? (head, right_hand, left_hand, or none): "
+        print("\nWhere would you like to touch Pepper? (head, right_hand, left_hand, or none): ")
         while True:
             touch_input = raw_input("> ").strip().lower()
             if touch_input in ["head", "right_hand", "left_hand", "none"]:
                 return touch_input
             else:
-                print "Please enter 'head', 'right_hand', 'left_hand', or 'none'"
+                print("Please enter 'head', 'right_hand', 'left_hand', or 'none'")
     
     def cleanup(self):
         """Cleanup resources"""
-        print "Shutting down terminal interface..."
+        print("Shutting down terminal interface...")
     
     # Gesture implementations
     def _thinking_gesture(self):
-        print "\n(Pepper performs a thinking gesture - tilting head slightly and raising right hand to chin)\n"
+        print("\n(Pepper performs a thinking gesture - tilting head slightly and raising right hand to chin)\n")
     
     def _mystic_gesture(self):
-        print "\n(Pepper performs a mystical gesture - extends both arms with open hands and looks upward)\n"
+        print("\n(Pepper performs a mystical gesture - extends both arms with open hands and looks upward)\n")
     
     def _explain_gesture(self):
-        print "\n(Pepper performs an explanatory gesture - moving both hands in a presenting motion)\n"
+        print("\n(Pepper performs an explanatory gesture - moving both hands in a presenting motion)\n")
     
     def _wave_gesture(self):
-        print "\n(Pepper performs a waving gesture - moving right hand side to side)\n"
+        print("\n(Pepper performs a waving gesture - moving right hand side to side)\n")
 
 
 # LLM fortune generator - Using OpenAI API
@@ -114,7 +114,7 @@ class LLMFortuneGenerator(object):
         # Try to get API key from environment variable if not provided
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self.api_key:
-            print "\n⚠️ WARNING: No OpenAI API key found. Will use fallback fortune generation."
+            print("\n⚠️ WARNING: No OpenAI API key found. Will use fallback fortune generation.")
             self.use_fallback = True
         else:
             self.use_fallback = False
@@ -144,9 +144,9 @@ class LLMFortuneGenerator(object):
         
         try:
             return self._generate_llm_fortune(question_type)
-        except Exception, e:
-            print "\n⚠️ Error generating fortune with LLM: %s" % str(e)
-            print "Falling back to predefined fortunes."
+        except Exception as e:
+            print("\n⚠️ Error generating fortune with LLM: {}".format(str(e)))
+            print("Falling back to predefined fortunes.")
             return self._get_fallback_fortune()
     
     def _get_fallback_fortune(self):
@@ -157,7 +157,7 @@ class LLMFortuneGenerator(object):
         """Use the LLM API to generate a fortune"""
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer %s" % self.api_key
+            "Authorization": "Bearer {}".format(self.api_key)
         }
         
         prompt = self._create_fortune_prompt(question_type)
@@ -172,7 +172,7 @@ class LLMFortuneGenerator(object):
             "temperature": 0.8
         }
         
-        print "(Contacting the mystical AI realm...)"
+        print("(Contacting the mystical AI realm...)")
         response = requests.post(self.api_url, headers=headers, json=data)
         
         if response.status_code == 200:
@@ -180,13 +180,13 @@ class LLMFortuneGenerator(object):
             fortune = response_data["choices"][0]["message"]["content"].strip()
             return fortune
         else:
-            raise Exception("API request failed with status code %s: %s" % 
-                           (response.status_code, response.text))
+            raise Exception("API request failed with status code {}: {}".format(
+                response.status_code, response.text))
     
     def _create_fortune_prompt(self, question_type):
         """Create a prompt for the LLM based on the question type"""
         return """
-        Generate a mystical fortune for someone asking about their %s.
+        Generate a mystical fortune for someone asking about their {}.
         
         The fortune should:
         - Be 2-3 sentences long
@@ -194,10 +194,10 @@ class LLMFortuneGenerator(object):
         - Be positive and inspiring
         - Include some vague but hopeful prediction
         - Not be too specific
-        - Relate to their %s question
+        - Relate to their {} question
         
         The fortune should sound like it's coming from a fortune teller robot named Pepper.
-        """ % (question_type, question_type)
+        """.format(question_type, question_type)
 
 
 # main.py - Main application
@@ -209,12 +209,12 @@ def main():
     # Get API key from environment or ask user
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        print "\nNo OpenAI API key found in environment variables."
+        print("\nNo OpenAI API key found in environment variables.")
         use_api = raw_input("Would you like to enter an OpenAI API key? (yes/no): ").strip().lower()
         if use_api.startswith('y'):
             api_key = raw_input("Enter your OpenAI API key: ").strip()
         else:
-            print "Will use fallback fortune generation without LLM."
+            print("Will use fallback fortune generation without LLM.")
     
     # Initialize components
     fortune_gen = LLMFortuneGenerator(api_key=api_key)
@@ -255,7 +255,7 @@ def run_fortune_teller(robot, fortune_gen):
         if more_details:
             robot.say("I see. This adds clarity to my vision.")
             # Combine the details with the question type for a better fortune
-            question_type = "%s - %s" % (question_type, more_details)
+            question_type = "{} - {}".format(question_type, more_details)
         
         # Dramatic pause and consultation
         robot.say("I am now consulting with the mystic forces of the universe...")
