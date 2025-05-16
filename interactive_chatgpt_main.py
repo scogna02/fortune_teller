@@ -37,7 +37,8 @@ class TerminalInterface(RobotInterface):
     
     def say(self, text):
         """Print text to terminal to simulate speech"""
-        print("\n🤖 Pepper says: \"%s\"\n" % text)
+        print(u"\n🤖 Pepper says: \"%s\"\n" % text)
+
     
     def move_head(self, yaw, pitch):
         """Simulate head movement with text description"""
@@ -135,7 +136,7 @@ class LLMFortuneGenerator(object):
         
         # API configuration
         self.api_url = "https://api.openai.com/v1/chat/completions"
-        self.model = "gpt-3.5-turbo"  # or another model as needed
+        self.model = "gpt-4o-mini"  # or another model as needed
         
     def get_fortune(self, question_type="general"):
         """Generate a fortune based on the question type"""
