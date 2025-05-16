@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # robot_interface.py - Abstract robot interface
-class RobotInterface:
+class RobotInterface(object):  # Use object as base class for Python 2.7
     def say(self, text):
         raise NotImplementedError("Subclass must implement abstract method")
     
@@ -26,6 +26,9 @@ import numpy as np
 
 class QiBulletInterface(RobotInterface):
     def __init__(self):
+        # Python 2.7 style initialization
+        super(QiBulletInterface, self).__init__()
+        
         self.simulation_manager = SimulationManager()
         self.client = self.simulation_manager.launchSimulation(gui=True)
         
@@ -70,7 +73,7 @@ class QiBulletInterface(RobotInterface):
         if gesture_name in self.gestures:
             self.gestures[gesture_name]()
         else:
-            print(f"Unknown gesture: {gesture_name}")
+            print("Unknown gesture: %s" % gesture_name)
     
     def get_camera_image(self):
         """Get image from simulated camera"""
@@ -78,7 +81,7 @@ class QiBulletInterface(RobotInterface):
             img = self.pepper.getCameraFrame(camera_id=2)  # Top camera
             return np.array(img)
         except Exception as e:
-            print(f"Camera error: {e}")
+            print("Camera error: %s" % e)
             return None
     
     def process_touch(self):
@@ -157,6 +160,9 @@ except ImportError:
 
 class NAOqiInterface(RobotInterface):
     def __init__(self, ip="127.0.0.1", port=9559):
+        # Python 2.7 style initialization
+        super(NAOqiInterface, self).__init__()
+        
         if not NAOQI_AVAILABLE:
             raise ImportError("NAOqi Python SDK not available")
         
@@ -221,7 +227,7 @@ class NAOqiInterface(RobotInterface):
         elif gesture_name == "wave":
             self._wave_gesture()
         else:
-            print(f"Unknown gesture: {gesture_name}")
+            print("Unknown gesture: %s" % gesture_name)
     
     def get_camera_image(self):
         """Get image from top camera"""
@@ -242,7 +248,7 @@ class NAOqiInterface(RobotInterface):
                 return array
             return None
         except Exception as e:
-            print(f"Camera error: {e}")
+            print("Camera error: %s" % e)
             return None
     
     def process_touch(self):
@@ -304,7 +310,7 @@ class NAOqiInterface(RobotInterface):
 # fortune_generator.py - Fortune generation logic
 import random
 
-class FortuneGenerator:
+class FortuneGenerator(object):  # Use object as base class for Python 2.7
     def __init__(self):
         self.fortunes = [
             "The stars align in your favor. Success is on the horizon.",
@@ -341,13 +347,13 @@ def main():
         try:
             robot = QiBulletInterface()
         except Exception as e:
-            print(f"Error initializing simulation: {e}")
+            print("Error initializing simulation: %s" % e)
             return
     else:
         try:
             robot = NAOqiInterface(ip=robot_ip)
         except Exception as e:
-            print(f"Error connecting to robot: {e}")
+            print("Error connecting to robot: %s" % e)
             return
     
     try:
@@ -377,12 +383,12 @@ def run_fortune_teller(robot, fortune_gen):
         # Try to use camera to detect person (simulation will use random data)
         img = robot.get_camera_image()
         if img is not None:
-            print("Camera image captured, dimensions:", img.shape)
+            print("Camera image captured, dimensions: %s" % str(img.shape))
         
         # Check for touch input (simulation will return random touch)
         touch = robot.process_touch()
         if touch != "none":
-            print(f"Touch detected on: {touch}")
+            print("Touch detected on: %s" % touch)
         
         # Dramatic pause
         robot.say("I am consulting with the mystic forces...")
