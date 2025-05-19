@@ -184,7 +184,7 @@ class LLMFortuneGenerator(object):
             raise Exception("API request failed with status code {}: {}".format(
                 response.status_code, response.text))
     
-    def _create_fortune_prompt(self, question_type):
+    def _create_fortune_prompt_old(self, question_type):
         """Create a prompt for the LLM based on the question type"""
         return """
         Generate a mystical fortune for someone asking about their {}.
@@ -199,6 +199,41 @@ class LLMFortuneGenerator(object):
         
         The fortune should sound like it's coming from a fortune teller robot named Pepper.
         """.format(question_type, question_type)
+    
+    def _create_fortune_prompt(self, question_type):
+        """Create a prompt for the LLM based on the question type"""
+        return """
+        Generate a mystical fortune for someone asking about their {}.
+
+        IMPORTANT: Include NAOqi animation tags in your response using this syntax:
+        - ^start(animations/Stand/Gestures/NAME) to start an animation during speech
+        - ^wait(animations/Stand/Gestures/NAME) to pause speech until an animation completes
+        - ^run(animations/Stand/Gestures/NAME) to perform an animation before continuing speech
+
+        Available gesture animations to use:
+        - Thinking_8 (thoughtful pose)
+        - ShowSky_3 (mystical pointing upward)
+        - Everything_4 (wide arm gesture)
+        - You_1 (pointing to the person)
+        - Enthusiastic_4 (excited gesture)
+        - Far_3 (pointing to distant future)
+        - Me_1 (pointing to self)
+        
+        Example format:
+        "I sense ^start(animations/Stand/Gestures/Thinking_8) a powerful energy surrounding your {}... ^wait(animations/Stand/Gestures/Thinking_8) Yes! ^run(animations/Stand/Gestures/ShowSky_3) The cosmic forces suggest a path of unexpected opportunities."
+        
+        The fortune should:
+        - Be 2-3 sentences long with appropriate animation tags
+        - Have a mystical, fortune-teller style
+        - Be positive and inspiring
+        - Include some vague but hopeful prediction
+        - Not be too specific
+        - Relate to their {} question
+        
+        The fortune should sound like it's coming from a fortune teller robot named Pepper.
+        """.format(question_type, question_type, question_type)
+    
+
 
 
 # main.py - Main application
