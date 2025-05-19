@@ -1,202 +1,200 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# robot_interface.py - Abstract robot interface
-class RobotInterface(object):  # Use object as base class for Python 2.7
-    def say(self, text):
-        raise NotImplementedError("Subclass must implement abstract method")
-    
-    def move_head(self, yaw, pitch):
-        raise NotImplementedError("Subclass must implement abstract method")
-    
-    def perform_gesture(self, gesture_name):
-        raise NotImplementedError("Subclass must implement abstract method")
-    
-    def get_camera_image(self):
-        raise NotImplementedError("Subclass must implement abstract method")
-    
-    def process_touch(self):
-        raise NotImplementedError("Subclass must implement abstract method")
-
-
-# TerminalInterface - Terminal-based implementation for testing
-class TerminalInterface(RobotInterface):
-    def __init__(self):
-        # Python 2.7 style initialization
-        super(TerminalInterface, self).__init__()
-        print("Terminal-based Fortune Teller initialized.")
-        print("This version simulates the robot through text-based interaction.\n")
-        
-        # Define gestures available
-        self.gestures = {
-            "think": self._thinking_gesture,
-            "mystic": self._mystic_gesture,
-            "explain": self._explain_gesture,
-            "wave": self._wave_gesture
-        }
-    
-    def say(self, text):
-        """Print text to terminal to simulate speech"""
-        print("\n🤖 Pepper says: \"%s\"\n" % text)
-    
-    def move_head(self, yaw, pitch):
-        """Simulate head movement with text description"""
-        direction = ""
-        if yaw > 0:
-            direction += "right"
-        elif yaw < 0:
-            direction += "left"
-            
-        if pitch > 0:
-            if direction:
-                direction += " and down"
-            else:
-                direction = "down"
-        elif pitch < 0:
-            if direction:
-                direction += " and up"
-            else:
-                direction = "up"
-                
-        if not direction:
-            direction = "to center position"
-            
-        print("(Pepper moves head %s)" % direction)
-    
-    def perform_gesture(self, gesture_name):
-        """Execute a named gesture"""
-        if gesture_name in self.gestures:
-            self.gestures[gesture_name]()
-        else:
-            print("(Unknown gesture: %s)" % gesture_name)
-    
-    def get_camera_image(self):
-        """Simulate camera input by returning None"""
-        print("(Pepper appears to be looking at you)")
-        return None
-    
-    def process_touch(self):
-        """Simulate touch input by asking user"""
-        print("\nWhere would you like to touch Pepper? (head, right_hand, left_hand, or none): ")
-        while True:
-            touch_input = raw_input("> ").strip().lower()
-            if touch_input in ["head", "right_hand", "left_hand", "none"]:
-                return touch_input
-            else:
-                print("Please enter 'head', 'right_hand', 'left_hand', or 'none'")
-    
-    def cleanup(self):
-        """Cleanup resources"""
-        print("Shutting down terminal interface...")
-    
-    # Gesture implementations
-    def _thinking_gesture(self):
-        print("\n(Pepper performs a thinking gesture - tilting head slightly and raising right hand to chin)\n")
-    
-    def _mystic_gesture(self):
-        print("\n(Pepper performs a mystical gesture - extends both arms with open hands and looks upward)\n")
-    
-    def _explain_gesture(self):
-        print("\n(Pepper performs an explanatory gesture - moving both hands in a presenting motion)\n")
-    
-    def _wave_gesture(self):
-        print("\n(Pepper waves its right hand in a greeting gesture)\n")
-
-
-# fortune_generator.py - Fortune generation logic
-import random
-
-class FortuneGenerator(object):  # Use object as base class for Python 2.7
-    def __init__(self):
-        self.fortunes = [
-            "The stars align in your favor. Success is on the horizon.",
-            "A surprising opportunity will present itself soon.",
-            "The path you've chosen is the right one. Continue with confidence.",
-            "An old friend will reenter your life with good news.",
-            "Your creativity will lead to an unexpected reward.",
-            "Be patient. What you seek is coming, but timing is essential.",
-            "A small change in your routine will lead to great happiness.",
-            "Trust your intuition on an important decision coming your way.",
-            "The obstacle you face is actually a blessing in disguise.",
-            "Your kindness to others will return to you tenfold."
-        ]
-    
-    def get_fortune(self):
-        """Return a random fortune"""
-        return random.choice(self.fortunes)
-
-
-# main.py - Main application
-import time
-import sys
 import os
+import sys
+import time
+import random
+import requests
 
-def main():
-    # Initialize components
-    fortune_gen = FortuneGenerator()
-    robot = TerminalInterface()
+# Import pepper_cmd for robot control
+import pepper_cmd
+from pepper_cmd import *
+
+# OpenAI API key
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+# Fallback fortunes with gesture tags
+PREDEFINED_FORTUNES = [
+    "^start(animations/Stand/Gestures/Enthusiastic_4) I see great happiness in your future! ^wait(animations/Stand/Gestures/Enthusiastic_4)",
+    "^start(animations/Stand/Gestures/ShowSky_1) The stars align to bring you success in your endeavors. ^wait(animations/Stand/Gestures/ShowSky_1)",
+    "^start(animations/Stand/Gestures/Thinking_1) Your path will soon become clear to you. ^wait(animations/Stand/Gestures/Thinking_1)",
+    "^start(animations/Stand/Gestures/Excited_1) An exciting opportunity awaits you! ^wait(animations/Stand/Gestures/Excited_1)"
+]
+
+# Mystical opening phrases
+MYSTIC_INTROS = [
+    "^start(animations/Stand/Gestures/Hey_1) The stars have aligned for you today... ^wait(animations/Stand/Gestures/Hey_1)",
+    "^start(animations/Stand/Gestures/Thinking_1) I sense a strong aura around you... ^wait(animations/Stand/Gestures/Thinking_1)",
+    "^start(animations/Stand/Gestures/ShowSky_1) Let me peer into the cosmic energies... ^wait(animations/Stand/Gestures/ShowSky_1)",
+    "^start(animations/Stand/Gestures/Explain_1) The mystical forces are speaking to me now... ^wait(animations/Stand/Gestures/Explain_1)"
+]
+
+def setup_robot():
+    """Set up the robot for fortune telling"""
+    pepper_cmd.robot.stand()
+    pepper_cmd.robot.setAlive(True)
+    
+    # Display mystical content on tablet
+    try:
+        html_content = """
+        <html>
+        <head>
+            <style>
+                body {
+                    background-color: #000033;
+                    text-align: center;
+                    color: #ffffff;
+                    font-family: serif;
+                    padding: 20px;
+                }
+                h1 {
+                    color: #9966ff;
+                    font-size: 24px;
+                    text-shadow: 0 0 10px #9966ff;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Mystical Fortune Teller</h1>
+        </body>
+        </html>
+        """
+        with open('/tmp/mystical.html', 'w') as f:
+            f.write(html_content)
+        pepper_cmd.showurl('/tmp/mystical.html')
+    except Exception as e:
+        print("Error displaying content:", e)
+
+def generate_fortune(question=""):
+    """Generate a fortune with gesture tags using ChatGPT API"""
+    if not OPENAI_API_KEY:
+        # Fall back to predefined fortunes with gesture tags
+        return random.choice(PREDEFINED_FORTUNES)
     
     try:
-        # Run the fortune teller application
-        run_fortune_teller(robot, fortune_gen)
-    finally:
-        # Clean up
-        robot.cleanup()
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + OPENAI_API_KEY
+        }
+        
+        prompt = """You are a mystical fortune teller. Generate a positive, intriguing fortune"""
+        if question:
+            prompt += f" for someone who asked: '{question}'"
+        
+        prompt += """. Keep it under 3 sentences, make it sound mystical and mysterious.
 
-def run_fortune_teller(robot, fortune_gen):
-    """Main fortune teller logic"""
-    # Initial greeting
-    robot.say("Hello there! I am Pepper, the mystical fortune teller.")
-    time.sleep(1)
+VERY IMPORTANT: Your response MUST include appropriate gesture tags for the Pepper robot. 
+Use these gesture tag formats in your response:
+- Start a gesture: ^start(animations/Stand/Gestures/GESTURE_NAME)
+- Wait for a gesture to complete: ^wait(animations/Stand/Gestures/GESTURE_NAME)
+
+Available gestures you can use:
+- Enthusiastic_4: For exciting fortunes
+- ShowSky_1: For cosmic/destiny references
+- Thinking_1: For contemplative moments
+- Hey_1: For greetings
+- Explain_1: For explanations
+- Excited_1: For positive revelations
+
+Example format: "^start(animations/Stand/Gestures/ShowSky_1) The stars align for your success! ^wait(animations/Stand/Gestures/ShowSky_1)"
+
+Your complete response should be just the fortune with the gesture tags included."""
+        
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 150,
+            "temperature": 0.7
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=data
+        )
+        
+        if response.status_code == 200:
+            fortune = response.json()["choices"][0]["message"]["content"].strip()
+            return fortune
+        else:
+            print("Error from ChatGPT API:", response.text)
+            return random.choice(PREDEFINED_FORTUNES)
     
-    # Main fortune telling loop
-    fortune_count = 0
-    max_fortunes = 3
-    
-    while fortune_count < max_fortunes:
-        # Ask for a question
-        robot.say("Please think of a question you seek an answer to, then press Enter.")
-        raw_input("(Press Enter when you have your question in mind) > ")
-        robot.perform_gesture("think")
+    except Exception as e:
+        print("Error generating fortune:", e)
+        return random.choice(PREDEFINED_FORTUNES)
+
+def main():
+    """Main function for the fortune teller application"""
+    try:
+        # Connect to Pepper
+        begin()
         time.sleep(1)
         
-        # Ask about the type of question (just for interaction)
-        robot.say("Is your question about love, career, or something else?")
-        question_type = raw_input("(Enter the type of your question) > ")
-        robot.say("Ah, a question about " + question_type + ". Very interesting.")
-        
-        # Dramatic pause and consultation
-        robot.say("I am consulting with the mystic forces...")
-        robot.perform_gesture("mystic")
-        time.sleep(2)
-        
-        # Process simulated touch if user wants to
-        robot.say("You may touch my sensors to enhance the connection with the mystic realm...")
-        touch = robot.process_touch()
-        if touch != "none":
-            robot.say("I sense your energy through my " + touch + ".")
-        
-        # Select and deliver a fortune
-        fortune = fortune_gen.get_fortune()
-        robot.say(fortune)
-        robot.perform_gesture("explain")
+        # Setup robot
+        setup_robot()
         time.sleep(1)
         
-        fortune_count += 1
+        # Initial greeting
+        pepper_cmd.say("^start(animations/Stand/Gestures/Hey_1) Greetings, seeker of wisdom. I am Pepper, the mystical fortune teller. ^wait(animations/Stand/Gestures/Hey_1)")
         
-        # Ask if they want another fortune if not the last one
-        if fortune_count < max_fortunes:
-            robot.say("Would you like to hear another fortune? (yes/no)")
-            response = raw_input("(Enter yes or no) > ").strip().lower()
+        print("\n🔮 Welcome to the Pepper Fortune Teller 🔮\n")
+        
+        while True:
+            print("\nOptions:")
+            print("1. Get your fortune")
+            print("2. Ask a specific question")
+            print("3. Exit")
+            choice = raw_input("Enter your choice (1-3): ")
             
-            if response.startswith('y'):
-                robot.say("Let me prepare for your next question.")
-                robot.perform_gesture("wave")
-            else:
+            if choice == '1':
+                user_name = raw_input("What is your name, seeker? ")
+                print("\nPepper is reading your fortune...\n")
+                
+                # Deliver mystical intro
+                intro = random.choice(MYSTIC_INTROS)
+                pepper_cmd.say(intro)
+                
+                # Generate and deliver the fortune
+                fortune = generate_fortune()
+                print("Fortune:", fortune)
+                pepper_cmd.say(fortune)
+                
+                # Conclude
+                pepper_cmd.say("^start(animations/Stand/Gestures/Explain_1) May the cosmic forces guide you on your journey. ^wait(animations/Stand/Gestures/Explain_1)")
+            
+            elif choice == '2':
+                user_name = raw_input("What is your name, seeker? ")
+                question = raw_input("What question seeks answers from the cosmos? ")
+                print("\nPepper is consulting the cosmic forces...\n")
+                
+                # Mystical acknowledgment of the question
+                pepper_cmd.say(random.choice(MYSTIC_INTROS))
+                
+                # Generate and deliver the fortune
+                fortune = generate_fortune(question)
+                print("Fortune:", fortune)
+                pepper_cmd.say(fortune)
+                
+                # Conclude
+                pepper_cmd.say("^start(animations/Stand/Gestures/Explain_1) May this wisdom guide your path. ^wait(animations/Stand/Gestures/Explain_1)")
+            
+            elif choice == '3':
+                print("Thank you for consulting the mystical forces. Farewell!")
+                pepper_cmd.say("^start(animations/Stand/Gestures/Hey_1) Farewell, seeker. The cosmos will be waiting when you return. ^wait(animations/Stand/Gestures/Hey_1)")
                 break
+            
+            else:
+                print("Invalid choice. Please enter 1, 2, or 3.")
     
-    # Farewell
-    robot.say("I hope the mystic forces guide you well. Farewell!")
+    except KeyboardInterrupt:
+        print("\nFortune telling session interrupted.")
+    
+    finally:
+        # Clean up and disconnect
+        print("Ending session...")
+        end()
 
 if __name__ == "__main__":
     main()
